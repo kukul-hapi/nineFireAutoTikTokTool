@@ -5,6 +5,7 @@
       v-bind="_crudProps"
       v-on="_crudListeners"
       @selection-change="handleSelectionChange"
+      v-loading="loading"
     >
       <div slot="header">
         <crud-search
@@ -46,7 +47,8 @@
                         :label="item.label"
                         :value="item.value"></el-option>
           </el-select>
-          <el-button type="primary" size="small" @click="executeOperation"><i class="el-icon-caret-right" style="font-size:15px "></i> 执行操作</el-button>
+          <el-button type="primary"  @click="executeOperation"><i class="el-icon-caret-right" ></i> 执行操作</el-button>
+
           <el-button type="warning" disabled>停止操作</el-button>
         </div>
 
@@ -94,7 +96,6 @@
         />
       </span>
     </d2-crud-x>
-
   </d2-container>
 </template>
 
@@ -108,7 +109,8 @@ export default {
   mixins: [d2CrudPlus.crud],
   data() {
     return {
-      options: [{
+      options:
+        [{
         value: '0',
         label: '上传视频'
       }, {
@@ -143,7 +145,8 @@ export default {
         label: '修改账号资料'
       },
       ],
-      value: ''
+      value: '',
+      loading: false,
 
     }
   },
@@ -184,16 +187,22 @@ export default {
     disableOnPage() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
-      // 发送 AJAX 请求到后端执行批量启用操作
-      // 这里需要根据您的后端 API 进行相应的实现
       return api.disableOnPageState(pageSize, page)
-      // 发送 AJAX 请求到后端执行本页禁用操作
-      // 这里需要根据您的后端 API 进行相应的实现
-      // return api.GetList()
     },
     executeOperation() {
+      this.loading = true; // 在点击按钮后设置 loading 为 true
+      // this.
       const selectedOperation = this.value;
-      return api.executeOperation(selectedOperation)
+      api.executeOperation(selectedOperation)
+        .then(() => {
+          // 请求成功后将 loading 设置为 false
+          this.loading = false;
+        })
+        .catch((error) => {
+          // 处理错误，例如显示错误提示
+          console.error(error);
+          this.loading = false;
+        });
     },
     getCrudOptions() {
       this.crud.searchOptions.form.user_type = 0
@@ -228,6 +237,7 @@ export default {
         return api.exportData({...query})
       })
     },
+
     // 部门懒加载
     loadChildrenMethod({row}) {
       return new Promise(resolve => {

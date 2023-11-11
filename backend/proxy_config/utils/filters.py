@@ -180,14 +180,14 @@ class CustomDjangoFilterBackend(DjangoFilterBackend):
         filterset_class = getattr(view, "filterset_class", None)
         filterset_fields = getattr(view, "filterset_fields", None)
 
-        # TODO: remove assertion in 2.1
+
         if filterset_class is None and hasattr(view, "filter_class"):
             utils.deprecate(
                 "`%s.filter_class` attribute should be renamed `filterset_class`." % view.__class__.__name__
             )
             filterset_class = getattr(view, "filter_class", None)
 
-        # TODO: remove assertion in 2.1
+
         if filterset_fields is None and hasattr(view, "filter_fields"):
             utils.deprecate(
                 "`%s.filter_fields` attribute should be renamed `filterset_fields`." % view.__class__.__name__

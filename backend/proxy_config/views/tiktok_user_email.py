@@ -1,5 +1,5 @@
 # Create your views here.
-from proxy_config.models import DvadminSystemUserEmail
+from proxy_config.models import DvadminSystemUserEmail,DvadminSystemTiktokProxyConfig
 from proxy_config.utils.serializers import TKUserEmailModelSerializer,TKUserEmailModelCreateUpdateSerializer
 from dvadmin.utils.viewset import CustomModelViewSet
 from dvadmin.utils.serializers import CustomModelSerializer
@@ -181,37 +181,46 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
 
     def createBro(self):
         import requests
+        # todo 这里抽离配置 只有激活的代理IP 分给激活的账户 然后同步 标记一下 在账户上面存储浏览器id 和代理id
+        # 筛选is_active字段为1的用户邮箱信息
+        active_user_emails = DvadminSystemTiktokProxyConfig.objects.filter(is_active=1)
+        # print(active_user_emails.name)
         url = "http://local.adspower.net:50325/api/v1/user/create"
-        payload = {
-            "name": "test",
-            "group_id": "0",
-            "repeat_config": [
-                "0"
-            ],
-            "fingerprint_config": {
-                "flash": "block",
-                "scan_port_type": "1",
-                "screen_resolution": "1920_1080",
-                "fonts": [
-                    "all"
+        # 如果存在is_active字段为1的用户邮箱信息
+        if active_user_emails.exists():
+            # 获取第一个is_active字段为1的用户邮箱信息（这里仅示例）
+            user_email_info = active_user_emails.first()
+            # 构建用户代理配置
+            payload = {
+                "name": "test",
+                "group_id": "0",
+                "repeat_config": [
+                    "0"
                 ],
-                "longitude": "180",
-                "latitude": "90",
-                "webrtc": "proxy",
-                "do_not_track": "true",
-                "hardware_concurrency": "default",
-                "device_memory": "default"
+                "fingerprint_config": {
+                    "flash": "block",
+                    "scan_port_type": "1",
+                    "screen_resolution": "1920_1080",
+                    "fonts": [
+                        "all"
+                    ],
+                    "longitude": "180",
+                    "latitude": "90",
+                    "webrtc": "proxy",
+                    "do_not_track": "true",
+                    "hardware_concurrency": "default",
+                    "device_memory": "default"
+                }
+                ,
+                "user_proxy_config": {
+                    "proxy_soft": "other",
+                    "proxy_type": "socks5",
+                    "proxy_host": "78f609233452dcb5.as.roxlabs.vip",
+                    "proxy_port": "4600",
+                    "proxy_user": "user-lxy654321-region-sg-sessid-sg2jP09d7J-sesstime-1-keep-true",
+                    "proxy_password": "111222"
+                }
             }
-            ,
-            "user_proxy_config": {
-                "proxy_soft": "other",
-                "proxy_type": "socks5",
-                "proxy_host": "78f609233452dcb5.as.roxlabs.vip",
-                "proxy_port": "4600",
-                "proxy_user": "user-lxy654321-region-sg-sessid-sg2jP09d7J-sesstime-1-keep-true",
-                "proxy_password": "111222"
-            }
-        }
         headers = {
             'Content-Type': 'application/json'
         }
@@ -225,11 +234,9 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
     def disable_on_page(self, request):
         page = int(request.query_params.get('page'))  # 获取页码参数，默认为 1
         page_size = int(request.query_params.get('limit'))  # 获取每页数量参数，默认为 20
-
         # 根据页码和每页数量计算查询的起始和结束索引
         start_index = (page - 1) * page_size
         end_index = page * page_size
-
         # 获取要批量修改的记录
         records_to_enable = DvadminSystemUserEmail.objects.all()[start_index:end_index]
         # 批量修改记录的状态
@@ -237,16 +244,20 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             print(f'Record ID: {record.id}, is_active: {record.is_active}')
             record.is_active = 0  # 假设修改状态字段为 is_active
             record.save()
-
         return DetailResponse(msg="修改成功")
-
     @action(methods=["POST"], detail=False)
     def selected_operation(self, request):
-        executeoperation = int(request.query_params.get('executeoperation'))
-        if executeoperation == 1:
-            # 在这里需要获取一些激活id的 也就是
-            ads_id =  self.createBro()
-            self.TikTokRegister("aaaa",ads_id)
-            print(ads_id)
-            pass
+        '''
+        此处 获取激活账户 然后获取激活ip 然后查看账户中是否有填写 如果没有则进行创建填写 分配 如果
+        '''
+        # todo  在这里获取 从数据库中获取启动状态的用户
+        email_account  = DvadminSystemUserEmail.objects.all().filter(is_active=1)
+        email_account['bro_id']
+        # executeoperation = int(request.query_params.get('executeoperation'))
+        # if executeoperation == 1:
+        #
+        #     ads_id =  self.createBro()
+        #     self.TikTokRegister("aaaa",ads_id)
+        #     print(ads_id)
+        #     pass
         return DetailResponse(msg="修改成功")
