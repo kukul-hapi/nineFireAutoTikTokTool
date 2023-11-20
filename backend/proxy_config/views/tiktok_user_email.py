@@ -1,6 +1,6 @@
 # Create your views here.
-from proxy_config.models import DvadminSystemUserEmail,DvadminSystemTiktokProxyConfig
-from proxy_config.utils.serializers import TKUserEmailModelSerializer,TKUserEmailModelCreateUpdateSerializer
+from proxy_config.models import DvadminSystemUserEmail, DvadminSystemTiktokProxyConfig
+from proxy_config.utils.serializers import TKUserEmailModelSerializer, TKUserEmailModelCreateUpdateSerializer
 from dvadmin.utils.viewset import CustomModelViewSet
 from dvadmin.utils.serializers import CustomModelSerializer
 from rest_framework import serializers
@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.decorators import action, permission_classes
 from dvadmin.utils.json_response import ErrorResponse, DetailResponse
 
-from proxy_config.browser.chrome import chrome_setup
+from proxy_config.browser.chrome import chrome_setup, generate_port
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains, Keys
 from password_generator import PasswordGenerator
@@ -38,8 +38,9 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
     serializer_class = TKUserEmailModelSerializer
     create_serializer_class = TKUserEmailModelCreateUpdateSerializer
     update_serializer_class = TKUserEmailModelCreateUpdateSerializer
-    filter_fields = ['desc_name', 'username', 'fans_count', 'video_count', 'proxy_address', 'mari_dir', 'update_datetime',
-                     'is_active','account_type','description','account_state']
+    filter_fields = ['desc_name', 'username', 'fans_count', 'video_count', 'proxy_address', 'mari_dir',
+                     'update_datetime',
+                     'is_active', 'account_type', 'description', 'account_state']
     search_fields = ['username']
     # 导出
     export_field_label = {
@@ -53,6 +54,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         "local_port": "本地端口"
     }
     export_serializer_class = ExportUserProfileSerializer
+
     @action(methods=["POST"], detail=False)
     def enable_list(self, request):
         # 获取要批量修改的记录
@@ -63,7 +65,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             record.is_active = 1  # 假设修改状态字段为 is_active
             record.save()
         return DetailResponse(msg="修改成功")
-
 
     @action(methods=["POST"], detail=False)
     def disable_list(self, request):
@@ -77,7 +78,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
 
         return DetailResponse(msg="修改成功")
 
-
     @action(methods=["POST"], detail=False)
     def enable_on_page(self, request):
         # 获取要批量修改的记录
@@ -88,7 +88,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         start_index = (page - 1) * page_size
         end_index = page * page_size
 
-        print(start_index,end_index)
+        print(start_index, end_index)
         # 获取要批量修改的记录
         records_to_enable = DvadminSystemUserEmail.objects.all()[start_index:end_index]
         # 批量修改记录的状态
@@ -99,97 +99,103 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
 
         return DetailResponse(msg="修改成功")
 
-    def TikTokRegister(self,country, ads_id):
+    def TikTokRegister(self, email_account):
         from selenium.common.exceptions import NoSuchElementException, WebDriverException
-        driver = chrome_setup(ads_id)  # Setting up the ChromeDriver
+        driver = chrome_setup(email_account)  # Setting up the ChromeDriver
         # browserId = createBrowser()
         shadow = Shadow(driver)  # Declaring the shadow module
         # Declaring the mouse and keyboard actions module
         act = ActionChains(driver)
         # db = DB()
         #########################
+        current_window = driver.current_window_handle
+        all_windows = driver.window_handles
 
+        for window in all_windows:
+            if window != current_window:
+                driver.switch_to.window(window)
+                driver.close()
+        driver.switch_to.window(current_window)
         driver.get('https://www.google.com/')
-        time.sleep(3)
-        driver.get('https://www.tiktok.com/signup')
-        print('The Tik-Tok page reached!')
-        driver.implicitly_wait(3)
+        # 关闭其他窗口，确保只有一个窗口处于打开状态
 
-        driver.find_element(
-            By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
-        time.sleep(5)
-
-        # Accept cookies shadowDOM function
-        try:
-            driver.implicitly_wait(200)
-            shadow_root = driver.find_element(By.XPATH, '//tiktok-cookie-banner')
-            button = shadow.find_element(
-                shadow_root, 'div > div.button-wrapper > button:nth-child(2)')
-            act.move_to_element(button).click(button).perform()
-            print('Cookies dismissed!')
-            time.sleep(3)
-        except Exception as E:
-            print(f'Cookies issue:{E}')
-
-        # 获取所有窗口句柄
-        tik_tok = driver.window_handles[0]
-        google_auth_login = driver.window_handles[1]
-
-        driver.switch_to.window(google_auth_login)
         driver.implicitly_wait(10)
-        username = 'XL9YYqlDkHi1@yooutu.vip'
-        password = '05Byxlnh4vhe'
-        enterAccount = True
+        driver.get('https://www.tiktok.com/signup')
+        print('tk页面打开成功')
+        driver.implicitly_wait(3)
+        # 设置最大尝试次数
+        max_attempts = 3
+        attempts = 0
+        enterAccount = False
+
         # 扫描页面 如果出现了账号密码输入框。。。。
-        while enterAccount:
+        while attempts < max_attempts:
             try:
-                print("identifierId")
-                element = driver.find_element(By.ID, 'identifierId')
+
+                # 选择谷歌登录
+                driver.find_element(
+                    By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
+                print('谷歌登录页面打开成功')
+                driver.implicitly_wait(5)
+                # 获取所有窗口句柄
+                google_auth_login = driver.window_handles[1]
+                driver.switch_to.window(google_auth_login)
+                driver.implicitly_wait(5)
+                username = email_account.username
+                password = email_account.password
+                print("获取用户名密码成功")
+                find_element = driver.find_element(By.ID, 'identifierId')
                 # 如果 'identifierId' 元素出现，运行登录操作 输入账号密码 。。。
                 enterAccount = self.loginTiktokByGoogle(username, password, driver, enterAccount)
-                print("出来了。。。")
-                if enterAccount == False:
-                    print("11111")
-                    driver.implicitly_wait(10)
-                    element = driver.find_element(By.XPATH,
-                                                  '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]')
-                    element.click()
-                    driver.window_handles
-                    enterAccount = True
-                    # 如果 'element' 元素出现，进行点击登录操作
 
-            except NoSuchElementException:
+                if enterAccount:
+                    break
+                attempts += 1
+                print(attempts)
+            except NoSuchElementException as e:
                 # 如果 'identifierId' 元素不存在，不执行登录操作
-                pass
+                driver.implicitly_wait(10)
+                element = driver.find_element(By.XPATH,
+                                              '// *[ @ id = "view_container"] / div / div / div[2] / div /div[1]/div/form/span/section/div/div/div/div/ul/li[1]')
+                element.click()
+                attempts += 1
+                print(f"没找到登录框: {e}")
 
-    def loginTiktokByGoogle(self,usename, password, driver, enterAccount):
+    def loginTiktokByGoogle(self, usename, password, driver, enterAccount):
         try:
             print("进入了输入账户页面")
             driver.implicitly_wait(10)
-            # 输入账号密码
-            print("进入了输入账号")
             driver.find_element(By.ID, 'identifierId').send_keys(usename)
             driver.find_element(By.ID, 'identifierNext').click()
             driver.implicitly_wait(3)
-            print("进入了输入密码")
             driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys(password)
             driver.find_element(By.ID, 'passwordNext').click()
-            print("再次登录 当前页面为" + driver.window_handles)
+
             return enterAccount
         except:
             pass
 
-    def createBro(self):
+    def process_email_account(self, email_account):
+        bro_id = email_account.bro_id
+        if not bro_id:
+            email_account = self.createBro(email_account)
+            self.TikTokRegister(email_account)
+        else:
+            self.TikTokRegister(email_account)
+
+    # 获取一个未分配的代理
+    def get_unassigned_proxy(self):
+        return DvadminSystemTiktokProxyConfig.objects.filter(account_isnull=0, is_active=1).first()
+
+    def createBro(self, email_account):
         import requests
-        # todo 这里抽离配置 只有激活的代理IP 分给激活的账户 然后同步 标记一下 在账户上面存储浏览器id 和代理id
+        port = generate_port()
         # 筛选is_active字段为1的用户邮箱信息
-        active_user_emails = DvadminSystemTiktokProxyConfig.objects.filter(is_active=1)
-        # print(active_user_emails.name)
+        proxy = self.get_unassigned_proxy()
         url = "http://local.adspower.net:50325/api/v1/user/create"
         # 如果存在is_active字段为1的用户邮箱信息
-        if active_user_emails.exists():
-            # 获取第一个is_active字段为1的用户邮箱信息（这里仅示例）
-            user_email_info = active_user_emails.first()
+        if proxy:
+            # 创建并保存到dvadmin_system_tiktok_proxy_config表
             # 构建用户代理配置
             payload = {
                 "name": "test",
@@ -200,7 +206,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 "fingerprint_config": {
                     "flash": "block",
                     "scan_port_type": "1",
-                    "screen_resolution": "1920_1080",
+                    "screen_resolution": "1024_768",
                     "fonts": [
                         "all"
                     ],
@@ -215,20 +221,34 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 "user_proxy_config": {
                     "proxy_soft": "other",
                     "proxy_type": "socks5",
-                    "proxy_host": "78f609233452dcb5.as.roxlabs.vip",
-                    "proxy_port": "4600",
-                    "proxy_user": "user-lxy654321-region-sg-sessid-sg2jP09d7J-sesstime-1-keep-true",
-                    "proxy_password": "111222"
+                    "proxy_host": proxy.IP,
+                    "proxy_port": proxy.port,
+                    "proxy_user": proxy.username,
+                    "proxy_password": proxy.password,
                 }
             }
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        response = requests.request("POST", url, headers=headers, json=payload)
-        text = response.json()
-        print(text)
-        ads_id = text['data']['id']
-        return ads_id
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            try:
+                response = requests.request("POST", url, headers=headers, json=payload)
+                text = response.json()
+                # 如果没有这个浏览器 则进行另外一个操作
+                new_browser_id = text['data']['id']
+                # 假设email_account是一个DvadminSystemUserEmail对象
+                email_account.bro_id = new_browser_id
+                email_account.proxy_id = proxy.id
+                proxy.browser_id = new_browser_id
+                proxy.local_port = port
+                print("进入注册1111111111111")
+                proxy.account_isnull = 1
+                proxy.save()
+                email_account.save()
+            except requests.exceptions.RequestException as e:
+                print(f"请查看ads浏览器连接是否正常，请查看" + {e})
+                # 等待一段时间后进行重试
+                time.sleep(1)
+            return email_account
 
     @action(methods=["POST"], detail=False)
     def disable_on_page(self, request):
@@ -245,19 +265,49 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             record.is_active = 0  # 假设修改状态字段为 is_active
             record.save()
         return DetailResponse(msg="修改成功")
+
+    def process_email_account_wrapper(self,email_account,lock):
+        # 在这里调用你的 process_email_account 函数
+        # 确保这个函数是线程安全的
+        # 例如，可以使用 Lock 来确保线程安全
+        lock.acquire()
+        try:
+            self.process_email_account(email_account)
+        finally:
+            lock.release()
+
     @action(methods=["POST"], detail=False)
     def selected_operation(self, request):
+        import threading
         '''
         此处 获取激活账户 然后获取激活ip 然后查看账户中是否有填写 如果没有则进行创建填写 分配 如果
         '''
         # todo  在这里获取 从数据库中获取启动状态的用户
-        email_account  = DvadminSystemUserEmail.objects.all().filter(is_active=1)
-        email_account['bro_id']
-        # executeoperation = int(request.query_params.get('executeoperation'))
-        # if executeoperation == 1:
-        #
-        #     ads_id =  self.createBro()
-        #     self.TikTokRegister("aaaa",ads_id)
-        #     print(ads_id)
-        #     pass
+        executeoperation = int(request.query_params.get('executeoperation'))
+        print(executeoperation)
+        # 选择谷歌登录
+        if executeoperation == 1:
+            try:
+                email_accounts = DvadminSystemUserEmail.objects.all().filter(is_active=1)
+                # 创建一个 Lock，用于确保线程安全
+                lock = threading.Lock()
+
+                # 设置线程数量为email_accounts的数量
+                num_threads = len(email_accounts)
+                # 创建一个线程列表
+                threads = []
+                # 遍历每个邮箱账户，为每个账户创建一个线程
+                thread = threading.Thread(target=process_email_account_wrapper, args=(email_account, lock))
+                # 启动线程
+                thread.start()
+                # 将线程添加到列表中
+                threads.append(thread)
+            # 等待所有线程完成
+                for thread in threads:
+                    thread.join()
+
+            except Exception as e:
+                # 处理异常并返回错误信息
+                error_message = f"An error occurred: {e}"
+                return DetailResponse(msg=error_message)
         return DetailResponse(msg="修改成功")

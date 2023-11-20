@@ -78,58 +78,6 @@ class DjangoSession(models.Model):
         db_table = 'django_session'
 
 
-class DvadminAccountData(models.Model):
-    id = models.IntegerField(primary_key=True)
-    decsp = models.CharField(max_length=255, blank=True, null=True)
-    accout = models.CharField(max_length=255, blank=True, null=True)
-    fans_count = models.IntegerField(blank=True, null=True)
-    video_count = models.IntegerField(blank=True, null=True)
-    proxy_address = models.CharField(max_length=255, blank=True, null=True)
-    material_path = models.CharField(max_length=255, blank=True, null=True)
-    update_time = models.DateTimeField(blank=True, null=True)
-    account_state = models.IntegerField(blank=True, null=True)
-    account_type = models.IntegerField(blank=True, null=True)
-    descp = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'dvadmin_account_data'
-
-
-class DvadminApiWhiteList(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    modifier = models.CharField(max_length=255, blank=True, null=True)
-    dept_belong_id = models.CharField(max_length=255, blank=True, null=True)
-    update_datetime = models.DateTimeField(blank=True, null=True)
-    create_datetime = models.DateTimeField(blank=True, null=True)
-    url = models.CharField(max_length=200)
-    method = models.IntegerField(blank=True, null=True)
-    enable_datasource = models.IntegerField()
-    creator_id = models.BigIntegerField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'dvadmin_api_white_list'
-
-
-class DvadminMessageCenter(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    modifier = models.CharField(max_length=255, blank=True, null=True)
-    dept_belong_id = models.CharField(max_length=255, blank=True, null=True)
-    update_datetime = models.DateTimeField(blank=True, null=True)
-    create_datetime = models.DateTimeField(blank=True, null=True)
-    title = models.CharField(max_length=100)
-    content = models.TextField()
-    target_type = models.IntegerField()
-    creator_id = models.BigIntegerField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'dvadmin_message_center'
-
-
 class DvadminMessageCenterTargetDept(models.Model):
     messagecenter_id = models.BigIntegerField()
     dept_id = models.BigIntegerField()
@@ -149,22 +97,6 @@ class DvadminMessageCenterTargetRole(models.Model):
         db_table = 'dvadmin_message_center_target_role'
         unique_together = (('messagecenter_id', 'role_id'),)
 
-
-class DvadminMessageCenterTargetUser(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    modifier = models.CharField(max_length=255, blank=True, null=True)
-    dept_belong_id = models.CharField(max_length=255, blank=True, null=True)
-    update_datetime = models.DateTimeField(blank=True, null=True)
-    create_datetime = models.DateTimeField(blank=True, null=True)
-    is_read = models.IntegerField(blank=True, null=True)
-    creator_id = models.BigIntegerField(blank=True, null=True)
-    messagecenter_id = models.BigIntegerField()
-    users_id = models.BigIntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'dvadmin_message_center_target_user'
 
 
 class DvadminSystemArea(models.Model):
@@ -457,6 +389,7 @@ class DvadminSystemTiktokProxyConfig(CoreModel):
     username = models.CharField(max_length=200, unique=True, verbose_name="username")
     password = models.CharField(max_length=100, verbose_name="password")
     IP = models.CharField(max_length=100, verbose_name="IP地址")
+    browser_id = models.CharField(max_length=100, verbose_name="浏览器id")
     PROXY_TYPE = (
         (0, "socks5"),
         (1, "http"),
@@ -470,6 +403,8 @@ class DvadminSystemTiktokProxyConfig(CoreModel):
         (0, "禁用"),
         (1, "启用"),
     )
+    account_isnull = models.IntegerField(blank=True, null=True)
+
     is_active = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name="状态")
 
     class Meta:
@@ -486,6 +421,7 @@ class Meta:
 
 class DvadminSystemUserEmail(models.Model):
     desc_name = models.CharField(max_length=50, blank=True, null=True)
+    password = models.CharField(max_length=255, blank=True, null=True)
     username = models.CharField(max_length=100, blank=True, null=True)
     fans_count = models.BigIntegerField(blank=True, null=True)
     video_count = models.BigIntegerField(blank=True, null=True)
@@ -496,9 +432,11 @@ class DvadminSystemUserEmail(models.Model):
     account_type = models.IntegerField(blank=True, null=True)
     account_state = models.IntegerField(blank=True, null=True)
     description = models.CharField(max_length=255, blank=True, null=True)
+    proxy_id = models.CharField(unique=True,max_length=255, blank=True, null=True)
     create_datetime = models.DateTimeField(blank=True, null=True)
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(unique=True, primary_key=True, db_index=True,)
     pri_desc = models.TextField(blank=True, null=True)
+    bro_id = models.CharField(max_length=100, verbose_name="浏览器id",null=True)
 
     class Meta:
         managed = False

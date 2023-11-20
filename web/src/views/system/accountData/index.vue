@@ -4,7 +4,7 @@
       ref="d2Crud"
       v-bind="_crudProps"
       v-on="_crudListeners"
-      @selection-change="handleSelectionChange"
+
       v-loading="loading"
     >
       <div slot="header">
@@ -16,7 +16,7 @@
         <div style="display: inline-block; margin-right: 20px;width: 1800px">
           <div style="display: inline-block; margin-right: 20px;">
             <el-dropdown type="primary" size="small" @command="handleDropdownCommand">
-              <el-button type="success" size="small">
+              <el-button type="success" size="small" >
                 快捷启用状态<i class="el-icon-arrow-down el-icon--right"></i>
               </el-button>
               <el-dropdown-menu slot="dropdown" style="padding: 10px; margin-left: 5px;">
@@ -30,11 +30,10 @@
 
           <div style="display: inline-block; margin-right: 20px;">
             <el-dropdown type="primary" size="small" @command="">
-              <el-button type="info" size="small">
+              <el-button type="info" size="small" @refresh="doRefresh()">
                 批量操作<i class="el-icon-arrow-down el-icon--right"></i>
               </el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="delList">批量删除</el-dropdown-item>
                 <el-dropdown-item command="check_email">邮箱验证</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
@@ -51,7 +50,6 @@
 
           <el-button type="warning" disabled>停止操作</el-button>
         </div>
-
         <el-button-group style="display: inline-block; margin-right: 20px;">
           <el-button
             size="small"
@@ -61,7 +59,7 @@
           >
             <i class="el-icon-plus"/> 新增
           </el-button>
-          <el-button size="small" type="danger" @click="batchDelete">
+          <el-button size="small" type="danger" @click="batchDelete" >
             <i class="el-icon-delete"></i> 批量删除
           </el-button>
           <el-button
@@ -105,7 +103,7 @@ import {crudOptions} from './crud'
 import {d2CrudPlus} from 'd2-crud-plus'
 
 export default {
-  name: 'user',
+  name: 'accountData',
   mixins: [d2CrudPlus.crud],
   data() {
     return {
@@ -168,26 +166,54 @@ export default {
       const page = this.$data["crud"]["page"]["current"];
       // 发送 AJAX 请求到后端执行批量启用操作
       // 这里需要根据您的后端 API 进行相应的实现
-      return api.EnableListState(pageSize, page)
+      return api.EnableListState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     batchDisable() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
       // 发送 AJAX 请求到后端执行批量启用操作
       // 这里需要根据您的后端 API 进行相应的实现
-      return api.DisableListState(pageSize, page)
+      return api.DisableListState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     enableOnPage() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
       // 发送 AJAX 请求到后端执行批量启用操作
       // 这里需要根据您的后端 API 进行相应的实现
-      return api.enableOnPageState(pageSize, page)
+      return api.enableOnPageState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     disableOnPage() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
-      return api.disableOnPageState(pageSize, page)
+      return api.disableOnPageState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     executeOperation() {
       this.loading = true; // 在点击按钮后设置 loading 为 true
@@ -222,9 +248,6 @@ export default {
     },
     batchDelRequest(ids) {
       return api.BatchDel(ids)
-    },
-    handleSelectionChange(selection) {
-
     },
     onExport() {
       const that = this
