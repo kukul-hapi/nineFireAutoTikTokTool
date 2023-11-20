@@ -34,129 +34,52 @@ def get_proxies():
 
 def is_port_in_use(port):
     import psutil
-
     for connection in psutil.net_connections():
         if connection.laddr.port == port and connection.status == psutil.CONN_LISTEN:
             return True
     return False
 
 # Generating and checking a free port for running multiple drivers simultaneously
-
-
+# with port_lock:
+#     bro_id = email_account.bro_id
+#     port = generate_port()
+#     # 如果bro_id为空，调用self.createBro()并保存返回值
+#     if not bro_id:
+#         email_account = self.createBro(email_account)
+#         # bro_id不为空，调用self.TikTokRegister
+#         email_account.local_port = port
+#     self.TikTokRegister(bro_id)
+PORT_RANGE_START = 4600
+PORT_RANGE_END = 4699
+import threading
+port_lock = threading.Lock()
 def generate_port():
     port = 0
     established = False
-    while established != True:
-        port = random.choice(range(49152, 49552))
-        response = is_port_in_use(port)
-        if response:
-            continue
-        else:
-            established = True
-            break
+    with port_lock:
+        while not established:
+            port = random.choice(range(PORT_RANGE_START, PORT_RANGE_END))
+            if not is_port_in_use(port):
+                established = True
     return port
 
-
-def chrome_setup(ads_id):
+def chrome_setup(email_account):
     from selenium import webdriver
     import undetected_chromedriver as uc
-    from selenium.webdriver.chrome.options import DesiredCapabilities
-    from selenium.webdriver.common.proxy import Proxy, ProxyType
-    from selenium.webdriver.chrome.service import Service as ChromeService
-    from webdriver_manager.chrome import ChromeDriverManager
-    from webdriver_manager.core.utils import ChromeType
-
-    # import logging
-    # logging.basicConfig(level=logging.NOTSET)
-    import requests, time
+    from proxy_config.models import DvadminSystemTiktokProxyConfig
+    import requests
+    proxy_config = DvadminSystemTiktokProxyConfig.objects.get(id=email_account.proxy_id)
+    local_port = proxy_config.local_port
     options = uc.ChromeOptions()
-    # options.binary_location = "C:/Program Files/Google/Chrome/Application/chrome.exe"
-    # The more preferable approach
-    preferences = {
-        "download.default_directory": "E:\\TTT(TikTokTakeover)\\content"}  # OR specifiyng the path Windows style
-    # Adding the desired download directory setting to Chrome
-    port = generate_port()
-
-    # proxies = open(
-    #     'E:\\TTT(TikTokTakeover)\\Python Scripts\\proxies.txt', 'r')
-    # lines = proxies.readlines()
-    # ip = random.choice(lines)
-
-    # options.add_argument(f'--proxy-server={ip}')
-    # options.headless = True
     options.add_argument(
-        f"--remote-debugging-port-{str(port)}")
+        f"--remote-debugging-port-{str(local_port)}")
     options.add_argument("--no-sandbox")
-
-    # options.add_argument("--disable-gpu")
-
-    open_url = "http://local.adspower.net:50325/api/v1/browser/start?user_id=" + ads_id
+    open_url = "http://local.adspower.net:50325/api/v1/browser/start?user_id=" + email_account.bro_id
     resp = requests.get(open_url).json()
     chrome_driver = resp["data"]["webdriver"]
     options.add_experimental_option("debuggerAddress", resp["data"]["ws"]["selenium"])
-    # options.add_argument(
-    #     '--profile-directory=C:\\Users\\AДМИН\\AppData\\Local\\Google\\Chrome\\User Data\\')
-    # options.add_argument(
-    #     '--user-data-dir=C:/Users/АДМИН\AppData/Local\Google/Chrome/User Data')
-    chrome_driver_path = "D:/TTT-master/Python Scripts/browser/chromedriver.exe"
     driver = webdriver.Chrome(
         chrome_driver,
-        options=options,
-        # service=ChromeService(ChromeDriverManager(version='118.0.5993').install())
-        # service=ChromiumService("C:/Users/АДМИН/AppData/Local/Google/Chrome SxS/Application/chrome-win/chrome.exe", ChromeDriverManager(
-        #     chrome_type=ChromeType.CHROMIUM))
+        options=options
     )
-
     return driver
-
-# Miscelaneous chrome_settings:
-# options.headless = True
-
-# options.add_argument(
-#     "user-agent=Mozilla/5.0 (Linux; Android 10; SM-J810G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36")
-# options.add_argument(
-#     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36")
-# options.add_experimental_option("excludeSwitches", ["enable-automation"])
-# options.add_experimental_option('useAutomationExtension', False)
-# options.add_argument("--disable-browser-side-navigation")
-# options.add_argument("--disable-features=VizDisplayCompositor")
-# options.add_argument("--disable-extensions")
-# options.add_argument("--disable-dev-shm-usage")
-# options.add_argument("--disable-infobars")
-# options.add_argument("--disable-gpu")
-# options.add_argument("--disable-dev-shm-usage")
-# options.add_argument("--disable-setuid-sandbox")
-# options.add_argument("--disable-web-security")
-# options.add_argument("--disable-site-isolation-trials")
-# options.add_argument("--no-sandbox")
-# options.add_argument("--disable-infobars")
-# options.add_argument("--disable-browser-side-navigation")
-# options.add_argument("--disable-features=VizDisplayCompositor")
-# options.add_argument("--disable-extensions")
-# options.add_argument("--disable-setuid-sandbox")
-# options.add_argument("--disable-web-security")
-
-# Proxy
-# import requests
-
-# ip = requests.get(
-#     "https://ipv4.webshare.io/",
-#     proxies={
-#         "http": "socks5://xspjfrgs-rotate:em4x009ttm5w@p.webshare.io:80/",
-#         "https": "socks5://xspjfrgs-rotate:em4x009ttm5w@p.webshare.io:80/"
-#     }
-# ).text
-
-# proxies = open(
-#     'E:\\TTT(TikTokTakeover)\\Python Scripts\\proxies.txt', 'r')
-# lines = proxies.readlines()
-# ip = random.choice(lines)
-
-# print(f' -- Running on proxy : {ip} -- ')
-# Dev Tools
-# Map_coordinates = dict({
-#     "latitude": 41.8781,
-#     "longitude": -87.6298,
-#     "accuracy": 100
-# })
-# driver.execute_cdp_cmd("Emulation.setGeolocationOverride", Map_coordinates)

@@ -93,26 +93,51 @@ export default {
               username: parts.slice(2, parts.length - 1).join(':'),
               password: parts[parts.length - 1],
               type:row['type'],
-              is_active:1,
+              is_active:0,
+              account_isnull:0,
+              local_proxy_port_traffic:0,
+              local_port:0
+            };
+            result.push(newRow);
+          }
+          if (parts.length >= 2) {
+            const newRow = {
+              IP: parts[0],
+              port: parts[1],
+              username: '',
+              password: '',
+              type:row['type'],
+              is_active:0,
+              account_isnull:0,
               local_proxy_port_traffic:0,
               local_port:0
             };
             result.push(newRow);
           }
         });
-
         return api.AddListObj(result); // If there are multiple lines, use AddListObj
       } else if (lines.length === 1) {
-
         const parts = lines[0].split(':');
         if (parts.length >= 4) {
           row['IP'] = parts[0];
           row['port'] = parts[1];
           row['username'] = parts.slice(2, parts.length - 1).join(':');
           row['password'] = parts[parts.length - 1];
-          row['is_active'] = 1;
+          row['is_active'] = 0;
           row['local_proxy_port_traffic'] = 0;
           row['local_port'] = 0;
+          row['account_isnull'] = 0;
+        }
+        if (parts.length >= 2) {
+          row['IP'] = parts[0];
+          row['port'] = parts[1];
+          row['username'] = '';
+          row['password'] = '';
+          row['is_active'] = 0;
+          row['local_proxy_port_traffic'] = 0;
+          row['local_port'] = 0;
+          row['account_isnull'] = 0;
+
         }
         row['description'] = '';
         return api.AddObj(row); // If there's only one line, use AddObj

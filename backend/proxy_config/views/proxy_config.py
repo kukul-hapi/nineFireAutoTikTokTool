@@ -72,9 +72,9 @@ class TiktokProxyConfigModelViewSet(CustomModelViewSet):
         data = request.data
         # 遍历数据并批量插入数据库
         results = []
-        print(len(data))
+
         for item in data:
-            print(item)
+
             # 在这里执行数据库插入操作，假设代理配置模型为 ProxyConfig
             # 以下示例代码仅供参考，您需要根据您的模型和逻辑进行适当修改
             proxy_config = DvadminSystemTiktokProxyConfig.objects.create(
@@ -84,8 +84,6 @@ class TiktokProxyConfigModelViewSet(CustomModelViewSet):
                 port=item['port'],
                 password=item['password'],
                 is_active=item['is_active'],
-                local_proxy_port_traffic=item['local_proxy_port_traffic'],
-                local_port=item['local_port']
             )
             result = {
                 "username": proxy_config.username,
@@ -94,8 +92,6 @@ class TiktokProxyConfigModelViewSet(CustomModelViewSet):
                 "port": proxy_config.port,
                 "password": proxy_config.password,
                 "is_active": proxy_config.is_active,
-                "local_proxy_port_traffic": proxy_config.local_proxy_port_traffic,
-                "local_port": proxy_config.local_port
             }
             results.append(result)
-        return DetailResponse(data=result, msg="添加成功")
+        return DetailResponse(data=results, msg="添加成功")

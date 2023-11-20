@@ -4,7 +4,8 @@
       ref="d2Crud"
       v-bind="_crudProps"
       v-on="_crudListeners"
-      @selection-change="handleSelectionChange"
+
+      v-loading="loading"
     >
       <div slot="header">
         <crud-search
@@ -15,7 +16,7 @@
         <div style="display: inline-block; margin-right: 20px;width: 1800px">
           <div style="display: inline-block; margin-right: 20px;">
             <el-dropdown type="primary" size="small" @command="handleDropdownCommand">
-              <el-button type="success" size="small">
+              <el-button type="success" size="small" >
                 快捷启用状态<i class="el-icon-arrow-down el-icon--right"></i>
               </el-button>
               <el-dropdown-menu slot="dropdown" style="padding: 10px; margin-left: 5px;">
@@ -29,11 +30,10 @@
 
           <div style="display: inline-block; margin-right: 20px;">
             <el-dropdown type="primary" size="small" @command="">
-              <el-button type="info" size="small">
+              <el-button type="info" size="small" @refresh="doRefresh()">
                 批量操作<i class="el-icon-arrow-down el-icon--right"></i>
               </el-button>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="delList">批量删除</el-dropdown-item>
                 <el-dropdown-item command="check_email">邮箱验证</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
@@ -46,10 +46,10 @@
                         :label="item.label"
                         :value="item.value"></el-option>
           </el-select>
-          <el-button type="primary" size="small" @click="executeOperation"><i class="el-icon-caret-right" style="font-size:15px "></i> 执行操作</el-button>
+          <el-button type="primary"  @click="executeOperation"><i class="el-icon-caret-right" ></i> 执行操作</el-button>
+
           <el-button type="warning" disabled>停止操作</el-button>
         </div>
-
         <el-button-group style="display: inline-block; margin-right: 20px;">
           <el-button
             size="small"
@@ -59,7 +59,7 @@
           >
             <i class="el-icon-plus"/> 新增
           </el-button>
-          <el-button size="small" type="danger" @click="batchDelete">
+          <el-button size="small" type="danger" @click="batchDelete" >
             <i class="el-icon-delete"></i> 批量删除
           </el-button>
           <el-button
@@ -94,7 +94,6 @@
         />
       </span>
     </d2-crud-x>
-
   </d2-container>
 </template>
 
@@ -104,11 +103,12 @@ import {crudOptions} from './crud'
 import {d2CrudPlus} from 'd2-crud-plus'
 
 export default {
-  name: 'user',
+  name: 'accountData',
   mixins: [d2CrudPlus.crud],
   data() {
     return {
-      options: [{
+      options:
+        [{
         value: '0',
         label: '上传视频'
       }, {
@@ -143,7 +143,8 @@ export default {
         label: '修改账号资料'
       },
       ],
-      value: ''
+      value: '',
+      loading: false,
 
     }
   },
@@ -165,35 +166,69 @@ export default {
       const page = this.$data["crud"]["page"]["current"];
       // 发送 AJAX 请求到后端执行批量启用操作
       // 这里需要根据您的后端 API 进行相应的实现
-      return api.EnableListState(pageSize, page)
+      return api.EnableListState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     batchDisable() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
       // 发送 AJAX 请求到后端执行批量启用操作
       // 这里需要根据您的后端 API 进行相应的实现
-      return api.DisableListState(pageSize, page)
+      return api.DisableListState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     enableOnPage() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
       // 发送 AJAX 请求到后端执行批量启用操作
       // 这里需要根据您的后端 API 进行相应的实现
-      return api.enableOnPageState(pageSize, page)
+      return api.enableOnPageState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     disableOnPage() {
       const pageSize = this.$data["crud"]["page"]["size"];
       const page = this.$data["crud"]["page"]["current"];
-      // 发送 AJAX 请求到后端执行批量启用操作
-      // 这里需要根据您的后端 API 进行相应的实现
-      return api.disableOnPageState(pageSize, page)
-      // 发送 AJAX 请求到后端执行本页禁用操作
-      // 这里需要根据您的后端 API 进行相应的实现
-      // return api.GetList()
+      return api.disableOnPageState(pageSize, page) .then(response => {
+        // 批量启用操作成功，执行表格刷新
+        this.doRefresh();
+        // 其他你需要的逻辑
+      })
+        .catch(error => {
+          // 处理错误
+        });
     },
     executeOperation() {
+      this.loading = true; // 在点击按钮后设置 loading 为 true
+      // this.
       const selectedOperation = this.value;
-      return api.executeOperation(selectedOperation)
+      api.executeOperation(selectedOperation)
+        .then(() => {
+          // 请求成功后将 loading 设置为 false
+          this.loading = false;
+        })
+        .catch((error) => {
+          // 处理错误，例如显示错误提示
+          console.error(error);
+          this.loading = false;
+        });
     },
     getCrudOptions() {
       this.crud.searchOptions.form.user_type = 0
@@ -214,9 +249,6 @@ export default {
     batchDelRequest(ids) {
       return api.BatchDel(ids)
     },
-    handleSelectionChange(selection) {
-
-    },
     onExport() {
       const that = this
       this.$confirm('是否确认导出所有数据项?', '警告', {
@@ -228,6 +260,7 @@ export default {
         return api.exportData({...query})
       })
     },
+
     // 部门懒加载
     loadChildrenMethod({row}) {
       return new Promise(resolve => {

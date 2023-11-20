@@ -55,7 +55,6 @@ export const crudOptions = (vm) => {
       width: 60
     },
     columns: [
-
       {
         title: 'ID',
         key: 'id',
@@ -64,8 +63,6 @@ export const crudOptions = (vm) => {
           disabled: true
         }
       },
-
-
       {
         title: '备注名',
         key: 'desc_name',
@@ -109,6 +106,7 @@ export const crudOptions = (vm) => {
       {
         title: '粉丝数量',
         key: 'fans_count',
+          sortable: true,
         minWidth: 90,
         type: 'input',
         disabled: false,
@@ -118,17 +116,16 @@ export const crudOptions = (vm) => {
         key: 'video_count',
         sortable: 'custom',
         minWidth: 90,
+
         search: {
           show:false,
           disabled: false
         },
         type: 'input',
         form: {
+          show:false,
+          disabled: false,
 
-          component: {
-            span: 12,
-            placeholder: '请输入姓名'
-          }
         }
       },
       {
@@ -141,50 +138,35 @@ export const crudOptions = (vm) => {
         minWidth: 140,
         type: 'text',
         form: {
-          rules: [ // 表单校验规则
-            {
-              required: true,
-              message: '必填项'
-            }
-          ],
-          itemProps: {
-            class: {yxtInput: true}
-          },
-          component: {
-            span: 12,
-            pagination: true,
-            props: {multiple: false}
-          }
+          show:false,
+          disabled: true
         },
         component: {
           name: 'foreignKey',
           valueBinding: 'proxy_address'
         }
       },
+      {
+        title: '密码',
+        key: 'password',
+        show:false,
+        disabled: false,
 
+        minWidth: 140,
+        type: 'text',
+      },
       {
         title: '素材目录',
         key: 'mari_dir',
         search: {
           show:false,
-          disabled: false
+          disabled: true
         },
         minWidth: 110,
         type: 'input',
         form: {
-          // rules: [
-          //   {
-          //     max: 20,
-          //     message: '请输入正确的手机号码',
-          //     trigger: 'blur'
-          //   }
-          // ],
-          itemProps: {
-            class: {yxtInput: true}
-          },
-          component: {
-            placeholder: '请输入手机号码'
-          }
+          disabled: true,
+          show:false,
         }
       }, {
         title: '更新时间',
@@ -192,6 +174,8 @@ export const crudOptions = (vm) => {
         minWidth: 180,
         addForm: {component: {show: false}},
         form: {
+          disabled: true,
+          show:false,
         }
       },
       {
@@ -201,40 +185,29 @@ export const crudOptions = (vm) => {
         width: 70,
 
         form: {
-          value: 1,
-          component: {
-            span: 12
-          }
+          disabled: true,
+          show:false,
         },
         component: {props: {color: 'auto'}} // 自动染色
       },
       {
         title: '启用状态',
         key: 'is_active',
-        type: 'switch',
-        dict: {data: vm.dictionary('button_status_number')},// <---你一般只需写这一个字典配置
+        type: 'select',//switch
         width: 80,
         search: {
           show:false,
           disabled: false,
-          component: {
-
-          }
+        },
+        dict: {
+          data: vm.dictionary('button_status_number')
         },
         addForm: {
           component: {
             show:false,
             disabled: false
           }
-        },
-        view: {
-          component: {},
-          // dict: {
-          //   data: vm.dictionary('button_whether_bool')
-          // },
-        },
-
-
+        }
       },
       {
         title: '状态',

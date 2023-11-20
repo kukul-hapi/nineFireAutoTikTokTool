@@ -34,7 +34,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
     retrieve:单例
     destroy:删除
     """
-
     queryset = DvadminSystemUserEmail.objects.all()
     serializer_class = TKUserEmailModelSerializer
     create_serializer_class = TKUserEmailModelCreateUpdateSerializer
@@ -105,6 +104,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         driver = chrome_setup(email_account)  # Setting up the ChromeDriver
         current_window = driver.current_window_handle
         all_windows = driver.window_handles
+        print(vars(email_account))
         # 关闭其他窗口，确保只有一个窗口处于打开状态
         for window in all_windows:
             if window != current_window:
@@ -114,29 +114,25 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         driver.get('https://www.google.com/')
         driver.implicitly_wait(10)
         driver.get('https://www.tiktok.com/signup')
-        driver.implicitly_wait(3)
         print('tk页面打开成功')
+        driver.implicitly_wait(3)
         # 设置最大尝试次数
         max_attempts = 3
         attempts = 0
         enterAccount = False
+        # 扫描页面 如果出现了账号密码输入框。。。。
         while attempts < max_attempts:
             try:
                 # 选择谷歌登录
                 driver.find_element(
                     By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
-                time.sleep(5)
                 print('谷歌登录页面打开成功')
+                driver.implicitly_wait(5)
                 # 获取所有窗口句柄、
-                tik_tok = driver.window_handles[0]
                 google_auth_login = driver.window_handles[1]
                 driver.switch_to.window(google_auth_login)
-                # 获取新窗口的URL
-                new_window_url = driver.current_url
-                # 打印URL或进行其他操作
-                print(f"URL of the new window: {new_window_url}")
-                driver.implicitly_wait(10)
                 find_element = driver.find_element(By.ID, 'identifierId')
+                driver.implicitly_wait(5)
                 username = email_account.username
                 password = email_account.password
                 print("获取用户名密码成功 账号：" + {username} + +"密码：" + {password})
@@ -146,17 +142,15 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                     break
                 attempts += 1
                 print(attempts)
-            except Exception as e:
+            except NoSuchElementException as e:
                 # 如果 'identifierId' 元素不存在，不执行登录操作
-                print(f"没找到登录框: {e}")
                 try:
                     driver.implicitly_wait(10)
-                    element = driver.find_element(By.XPATH,
-                                                  '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]')
+                    element = driver.find_element(By.XPATH,'//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]')
                     element.click()
                     attempts += 1
-                    print(f"111111111没找到登录框: {e}")
-                except Exception:
+                    print(f"没找到登录框: {e}")
+                except NoSuchElementException:
                     print("两个元素都未找到")
                     attempts += 1
                     print(attempts)
@@ -178,7 +172,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             return enterAccount
         except:
             pass
-
     def process_email_account(self, email_account):
         bro_id = email_account.bro_id
         if not bro_id:
@@ -191,50 +184,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
     def get_unassigned_proxy(self):
         return DvadminSystemTiktokProxyConfig.objects.filter(account_isnull=0, is_active=1).first()
 
-    def deal_the_img(self, vericaiton_type):
-        '''
-        :param vericaiton_type:  1 双环    2 图片拖动 3  图片 同样元素
-        :return:
-        '''
-        from proxy_config.utils.common import common_download_image
-        from proxy_config.utils.verication.powerddddocr import ddddOcr_tk
-        from proxy_config.utils.verication.rotate_captcha import tk_circle_discern
-        # img 外部容器
-        img_outer_container = None
-        this_xpath_pattern = None  # 图片 二维码 pattern
-        if vericaiton_type == 1:  # 外环
-            this_xpath_pattern = './/div[@class="sc-jTzLTM kuTGKN"]'
-            img_outer_container = self.browser.find_element(By.XPATH, this_xpath_pattern)
-        elif vericaiton_type == 2:  # 图片
-            this_xpath_pattern = './/div[contains(@class,"captcha_verify_img--wrapper")]'
-            img_outer_container = self.browser.find_element(By.XPATH, this_xpath_pattern)
-        elif vericaiton_type == 3:
-            this_xpath_pattern = './/img[@id="captcha-verify-image"]'
-            input('please deal the problem by hand,input waiting...')
-            return
-        # 外圈图片   背景图片
-        outer_pic = img_outer_container.find_element(By.XPATH, './img[1]')
-        outer_pic = outer_pic.get_attribute('src')
-        common_download_image(outer_pic, 'outer.png')  # 下载图片
-        # 内圈图片   目标小图片
-        inner_pic = img_outer_container.find_element(By.XPATH, './img[2]')
-        inner_pic = inner_pic.get_attribute('src')
-        # 下载到本地
-        common_download_image(inner_pic, 'inner.png')  # 下载图片
-        print('have download the two picture')
-        # 验证码本地识别
-        distance = None  # 需要拖动的距离
-        if vericaiton_type:
-            angle = tk_circle_discern('inner.png', 'outer.png')
-            distance = angle / 180 * (340 - 64)
-        else:
-            distance = ddddOcr_tk('inner.png', 'outer.png')
-            distance = distance * 0.62
-        this_track = [int(distance // 4), int(distance // 4), int(distance * 0.3), int(distance * 0.2) + 5,
-                      -8]  # 模拟鼠标拖动的点移
-        this_track.append(int(distance) - sum(this_track))
-        self.hold_on_slide(this_track)  # 拖动滑块 模拟移动
-        self.judge_the_img_src_change(this_xpath_pattern + '/img[2]/@src', inner_pic, vericaiton_type)
     def createBro(self, email_account):
         import requests
         port = generate_port()
@@ -338,7 +287,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         if executeoperation == 1:
             try:
                 email_accounts = DvadminSystemUserEmail.objects.all().filter(is_active=1)
-
                 # 创建一个 Lock，用于确保线程安全
                 lock = threading.Lock()
                 # 设置线程数量为 email_accounts 的数量
