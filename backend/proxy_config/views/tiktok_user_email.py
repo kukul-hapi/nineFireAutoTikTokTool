@@ -103,6 +103,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         from selenium.common.exceptions import NoSuchElementException, WebDriverException
         print("Tk注册")
         driver = chrome_setup(email_account)
+        act = ActionChains(driver)
         # 创建浏览器成功
         print("创建浏览器成功")
         current_window = driver.current_window_handle
@@ -123,6 +124,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         attempts = 0
         while attempts < max_attempts:
             # 选择谷歌登录
+            print(f"Attempts: {attempts}")
             time.sleep(5)
             driver.find_element(
                 By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
@@ -149,21 +151,51 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 print(f"Current URL: {new_current_url}")
                 if old_current_url != new_current_url:
                     print("登录成功")
+
+                    act.move_to_element(driver.find_element(
+                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[1]')).click().perform()
+                    time.sleep(1)
+                    months = driver.find_elements(
+                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[1]/div[2]/div')
+                    act.move_to_element(random.choice(months)).click().perform()
+
+                    act.move_to_element(driver.find_element(
+                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[2]')).click().perform()
+                    time.sleep(1)
+                    days = driver.find_elements(
+                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[2]/div[2]/div')
+                    act.move_to_element(random.choice(days)).click().perform()
+
+                    act.move_to_element(driver.find_element(
+                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]')).click().perform()
+                    time.sleep(1)
+                    years = driver.find_elements(
+                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]/div[2]/div')
+                    legit_years = years[20:38]
+                    act.move_to_element(random.choice(legit_years)).click().perform()
+
+
+
+                    driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/div/button').click()
+
                 else:
                     print("登录失败")
+                    break
             elif  attempts == 0 or email_account.login_num == 0:
                 print("首次登录")
-                print("attempts:" + attempts + "login_num:" + email_account.login_num)
                 driver.implicitly_wait(10)
-                driver.find_element(By.ID, 'identifierId'). send_keys("fasfsaef@gmail.com")
+                driver.find_element(By.ID, 'identifierId'). send_keys(email_account.username)
+                print("填写邮箱成功")
                 driver.find_element(By.ID, 'identifierNext').click()
                 print("点击下一步")
                 driver.implicitly_wait(3)
-                driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys('bYh9Akg!5')
+                driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys(email_account.password)
+                print("填写密码成功")
                 driver.find_element(By.ID, 'passwordNext').click()
+                print("填写成功")
                 email_account.login_num+=1
-            # 如果 'identifierId' 元素出现，运行登录操作 输入账号密码 。。。
-            # enterAccount = self.loginTiktokByGoogle(email_account, driver, enterAccount)
+
+
             attempts += 1
             print("attempts : "+attempts)
 
