@@ -121,7 +121,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         # 设置最大尝试次数
         max_attempts = 3
         attempts = 0
-        enterAccount = False
         while attempts < max_attempts:
             # 选择谷歌登录
             time.sleep(5)
