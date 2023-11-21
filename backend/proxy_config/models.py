@@ -430,6 +430,7 @@ class DvadminSystemUserEmail(models.Model):
     update_datetime = models.DateTimeField(blank=True, null=True)
     is_active = models.IntegerField(blank=True, null=True)
     account_type = models.IntegerField(blank=True, null=True)
+    login_num = models.IntegerField(blank=True, null=True)
     account_state = models.IntegerField(blank=True, null=True)
     description = models.CharField(max_length=255, blank=True, null=True)
     proxy_id = models.CharField(unique=True,max_length=255, blank=True, null=True)

@@ -34,7 +34,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
     retrieve:单例
     destroy:删除
     """
-
     queryset = DvadminSystemUserEmail.objects.all()
     serializer_class = TKUserEmailModelSerializer
     create_serializer_class = TKUserEmailModelCreateUpdateSerializer
@@ -102,7 +101,10 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
 
     def TikTokRegister(self, email_account):
         from selenium.common.exceptions import NoSuchElementException, WebDriverException
-        driver = chrome_setup(email_account)  # Setting up the ChromeDriver
+        print("Tk注册")
+        driver = chrome_setup(email_account)
+        # 创建浏览器成功
+        print("创建浏览器成功")
         current_window = driver.current_window_handle
         all_windows = driver.window_handles
         # 关闭其他窗口，确保只有一个窗口处于打开状态
@@ -121,70 +123,83 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         attempts = 0
         enterAccount = False
         while attempts < max_attempts:
-            try:
-                # 选择谷歌登录
-                driver.find_element(
-                    By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
-                time.sleep(5)
-                print('谷歌登录页面打开成功')
-                # 获取所有窗口句柄、
-                tik_tok = driver.window_handles[0]
-                google_auth_login = driver.window_handles[1]
-                driver.switch_to.window(google_auth_login)
-                # 获取新窗口的URL
-                new_window_url = driver.current_url
-                # 打印URL或进行其他操作
-                print(f"URL of the new window: {new_window_url}")
+            # 选择谷歌登录
+            time.sleep(5)
+            driver.find_element(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
+            time.sleep(5)
+            print('谷歌登录页面打开成功')
+            # 获取所有窗口句柄、
+            tik_tok = driver.window_handles[0]
+            old_current_url = driver.execute_script("return window.location.href;")
+            print(f"Current URL: {old_current_url}")
+            google_auth_login = driver.window_handles[1]
+            driver.switch_to.window(google_auth_login)
+            # 获取新窗口的URL
+            new_window_url = driver.current_url
+            # 打印URL或进行其他操作
+            print(f"URL of the new window: {new_window_url}")
+            if attempts >= 1 or email_account.login_num > 0:
+                print("多次登录")
                 driver.implicitly_wait(10)
-                find_element = driver.find_element(By.ID, 'identifierId')
-                username = email_account.username
-                password = email_account.password
-                print("获取用户名密码成功 账号：" + {username} + +"密码：" + {password})
-                # 如果 'identifierId' 元素出现，运行登录操作 输入账号密码 。。。
-                enterAccount = self.loginTiktokByGoogle(username, password, driver, enterAccount)
-                if enterAccount:
-                    break
-                attempts += 1
-                print(attempts)
-            except Exception as e:
-                # 如果 'identifierId' 元素不存在，不执行登录操作
-                print(f"没找到登录框: {e}")
-                try:
-                    driver.implicitly_wait(10)
-                    element = driver.find_element(By.XPATH,
-                                                  '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]')
-                    element.click()
-                    attempts += 1
-                    print(f"111111111没找到登录框: {e}")
-                except Exception:
-                    print("两个元素都未找到")
-                    attempts += 1
-                    print(attempts)
+                driver.find_element(
+                    By.XPATH, '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]/div').click()
+                time.sleep(10)
+                driver.switch_to.window(tik_tok)
+                new_current_url = driver.execute_script("return window.location.href;")
+                print(f"Current URL: {new_current_url}")
+                if old_current_url != new_current_url:
+                    print("登录成功")
                 else:
-                    print("找到第二个元素")
-            else:
-                print("找到第一个元素")
+                    print("登录失败")
+            elif  attempts == 0 or email_account.login_num == 0:
+                print("首次登录")
+                print("attempts:" + attempts + "login_num:" + email_account.login_num)
+                driver.implicitly_wait(10)
+                driver.find_element(By.ID, 'identifierId'). send_keys("fasfsaef@gmail.com")
+                driver.find_element(By.ID, 'identifierNext').click()
+                print("点击下一步")
+                driver.implicitly_wait(3)
+                driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys('bYh9Akg!5')
+                driver.find_element(By.ID, 'passwordNext').click()
+                email_account.login_num+=1
+            # 如果 'identifierId' 元素出现，运行登录操作 输入账号密码 。。。
+            # enterAccount = self.loginTiktokByGoogle(email_account, driver, enterAccount)
+            attempts += 1
+            print("attempts : "+attempts)
 
-    def loginTiktokByGoogle(self, usename, password, driver, enterAccount):
+
+    def loginTiktokByGoogle(self, email_account, driver, enterAccount):
+        from selenium.common.exceptions import NoSuchElementException, WebDriverException
         try:
             print("进入了输入账户页面")
             driver.implicitly_wait(10)
-            driver.find_element(By.ID, 'identifierId').send_keys(usename)
+            print("获取用户名密码成功 账号：{} 密码：{}".format(email_account.username, email_account.password))
+            username_element =driver.find_element(By.ID, 'identifierId')
+            print("获取登录框元素")
+            username_element.send_keys(email_account.usename)
+            print("输入密码")
             driver.find_element(By.ID, 'identifierNext').click()
+            print("点击下一步")
             driver.implicitly_wait(3)
-            driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys(password)
+            password_element = driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input')
+            password_element.send_keys(email_account.password)
             driver.find_element(By.ID, 'passwordNext').click()
 
-            return enterAccount
-        except:
+
+
+        except WebDriverException as e :
+            print("输入账号失败"+e)
             pass
 
     def process_email_account(self, email_account):
         bro_id = email_account.bro_id
         if not bro_id:
+            print('创建浏览器')
             email_account = self.createBro(email_account)
             self.TikTokRegister(email_account)
         else:
+            print('wei创建浏览器')
             self.TikTokRegister(email_account)
 
     # 获取一个未分配的代理
@@ -279,8 +294,10 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 'Content-Type': 'application/json'
             }
             try:
+                print("创建新的浏览器")
                 response = requests.request("POST", url, headers=headers, json=payload)
                 text = response.json()
+
                 # 如果没有这个浏览器 则进行另外一个操作
                 new_browser_id = text['data']['id']
                 # 假设email_account是一个DvadminSystemUserEmail对象
@@ -288,7 +305,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 email_account.proxy_id = proxy.id
                 proxy.browser_id = new_browser_id
                 proxy.local_port = port
-                print("进入注册1111111111111")
                 proxy.account_isnull = 1
                 proxy.save()
                 email_account.save()
@@ -333,21 +349,19 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         '''
         # todo  在这里获取 从数据库中获取启动状态的用户
         executeoperation = int(request.query_params.get('executeoperation'))
-        print(executeoperation)
         # 选择谷歌登录
         if executeoperation == 1:
             try:
                 email_accounts = DvadminSystemUserEmail.objects.all().filter(is_active=1)
-
                 # 创建一个 Lock，用于确保线程安全
                 lock = threading.Lock()
                 # 设置线程数量为 email_accounts 的数量
-                num_threads = len(email_accounts)
-                print(num_threads)
+                num_threads = len(email_accounts)*4
                 # 使用 ThreadPoolExecutor 创建一个线程池
                 with ThreadPoolExecutor(max_workers=num_threads) as executor:
                     # 使用 submit 提交每个邮箱账户的处理任务
                     for email_account in email_accounts:
+                        print(email_account)
                         executor.submit(self.process_email_account_wrapper, email_account, lock)
 
             except Exception as e:

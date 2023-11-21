@@ -100,7 +100,7 @@ export default {
             };
             result.push(newRow);
           }
-          if (parts.length >= 2) {
+          if (parts.length === 2) {
             const newRow = {
               IP: parts[0],
               port: parts[1],
@@ -128,7 +128,7 @@ export default {
           row['local_port'] = 0;
           row['account_isnull'] = 0;
         }
-        if (parts.length >= 2) {
+        if (parts.length === 2) {
           row['IP'] = parts[0];
           row['port'] = parts[1];
           row['username'] = '';
