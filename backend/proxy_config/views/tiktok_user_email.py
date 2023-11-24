@@ -1,4 +1,6 @@
 # Create your views here.
+from selenium.common import TimeoutException
+from lxml import etree
 from proxy_config.models import DvadminSystemUserEmail, DvadminSystemTiktokProxyConfig
 from proxy_config.utils.serializers import TKUserEmailModelSerializer, TKUserEmailModelCreateUpdateSerializer
 from dvadmin.utils.viewset import CustomModelViewSet
@@ -7,7 +9,7 @@ from rest_framework import serializers
 # from backend.proxy_config.models import TiktokProxyConfig
 from rest_framework.decorators import action, permission_classes
 from dvadmin.utils.json_response import ErrorResponse, DetailResponse
-
+from loguru import logger
 from proxy_config.browser.chrome import chrome_setup, generate_port
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains, Keys
@@ -34,6 +36,9 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
     retrieve:单例
     destroy:删除
     """
+
+  
+
     queryset = DvadminSystemUserEmail.objects.all()
     serializer_class = TKUserEmailModelSerializer
     create_serializer_class = TKUserEmailModelCreateUpdateSerializer
@@ -54,6 +59,9 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         "local_port": "本地端口"
     }
     export_serializer_class = ExportUserProfileSerializer
+
+
+
 
     @action(methods=["POST"], detail=False)
     def enable_list(self, request):
@@ -99,11 +107,116 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
 
         return DetailResponse(msg="修改成功")
 
+    def TkLoginFristByGoogle(self, driver, email_account):
+        time.sleep(2)
+        # 获取新窗口的URL
+        driver.implicitly_wait(5)
+        driver.find_element(By.ID, 'identifierId').send_keys(email_account.username)
+        driver.find_element(By.ID, 'identifierNext').click()
+        driver.implicitly_wait(3)
+        driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys(email_account.password)
+
+        driver.find_element(By.ID, 'passwordNext').click()
+
+        driver.find_element(By.XPATH, '//*[@id="confirm"]').click()
+
+        email_account.login_num += 1
+
+
+    def wait_xpath(self, xpath_pattern,driver):
+        from selenium.webdriver.support.wait import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        element = (By.XPATH, xpath_pattern)
+        WebDriverWait(driver=driver, timeout=10).until(EC.presence_of_element_located(element))
+    def is_exist(self, xpath_pattern,driver) -> bool:
+        """
+        driver.find_element(*locator)
+        :param xpath_pattern:
+        :return False or the Element:
+        """
+        try:
+            self.wait_xpath(xpath_pattern,driver)
+            return True
+        except Exception as e:
+            return False
+    def TkLoginNoFristByGoogle(self, driver, old_current_url):
+        from proxy_config.utils.random_email_name.randoms import EmailNameGenerator
+        time.sleep(1)
+        print("多次登录")
+        driver.implicitly_wait(5)
+        driver.find_element(
+            By.XPATH,
+            '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]/div').click()
+        time.sleep(10)
+        tik_tok = driver.window_handles[0]
+        driver.switch_to.window(tik_tok)
+        new_current_url = driver.execute_script("return window.location.href;")
+        print(f"Current URL: {new_current_url}")
+        if old_current_url != new_current_url:
+            print("登录成功")
+            time.sleep(5)
+            act = ActionChains(driver)
+            act.move_to_element(driver.find_element(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[1]')).click().perform()
+            time.sleep(1)
+            months = driver.find_elements(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[1]/div[2]/div')
+            act.move_to_element(random.choice(months)).click().perform()
+
+            act.move_to_element(driver.find_element(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[2]')).click().perform()
+            time.sleep(1)
+            days = driver.find_elements(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[2]/div[2]/div')
+            act.move_to_element(random.choice(days)).click().perform()
+
+            act.move_to_element(driver.find_element(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]')).click().perform()
+            time.sleep(1)
+            years = driver.find_elements(
+                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]/div[2]/div')
+            legit_years = years[20:38]
+            act.move_to_element(random.choice(legit_years)).click().perform()
+
+            driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/div/button').click()
+            vericaiton_state = self.deal_verication_pic(driver)  # 0 无验证  1  环形   2 图片拖动  3 图片相同元素验证
+            print('vericaiton_state')
+            if vericaiton_state != 0:
+                print('vericaiton_state111111')
+                self.deal_the_img(vericaiton_state,driver)
+                time.sleep(5)
+                generate_e = EmailNameGenerator()
+                str_list = generate_e.__repr__()
+                username = str_list[2]
+                driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/form/div[2]/div[1]/input').send_keys(
+                    username)
+                driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/form/button').click()
+                return False
+
+
+    def deal_verication_pic(self,driver):
+        res = self.is_exist('.//div[@class="sc-jTzLTM kuTGKN"]/img[2]',driver)
+        if res:
+            return 1
+        res = self.is_exist('.//div[contains(@class,"captcha_verify_img--wrapper")]/img[2]',driver)
+        if res:
+            return 2
+        res = self.is_exist('.//img[@id="captcha-verify-image"]',driver)
+        if res:
+            return 3
+        return 0
+    def judge_the_login_src_change(self,driver):
+        '''
+        登录判断是否成功
+        '''
+
+        pass
+
+
     def TikTokRegister(self, email_account):
-        from selenium.common.exceptions import NoSuchElementException, WebDriverException
+        from selenium.common.exceptions import WebDriverException
         print("Tk注册")
         driver = chrome_setup(email_account)
-        act = ActionChains(driver)
         # 创建浏览器成功
         print("创建浏览器成功")
         current_window = driver.current_window_handle
@@ -111,9 +224,10 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         # 关闭其他窗口，确保只有一个窗口处于打开状态
         for window in all_windows:
             if window != current_window:
-                driver.switch_to.window(window)
-                driver.close()
+               driver.switch_to.window(window)
+               driver.close()
         driver.switch_to.window(current_window)
+        old_current_url = driver.window_handles[0]
         driver.get('https://www.google.com/')
         driver.implicitly_wait(10)
         driver.get('https://www.tiktok.com/signup')
@@ -123,104 +237,44 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         max_attempts = 3
         attempts = 0
         while attempts < max_attempts:
-            # 选择谷歌登录
-            print(f"Attempts: {attempts}")
-            time.sleep(5)
-            driver.find_element(
-                By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
-            time.sleep(5)
-            print('谷歌登录页面打开成功')
-            # 获取所有窗口句柄、
-            tik_tok = driver.window_handles[0]
-            old_current_url = driver.execute_script("return window.location.href;")
-            print(f"Current URL: {old_current_url}")
-            google_auth_login = driver.window_handles[1]
-            driver.switch_to.window(google_auth_login)
-            # 获取新窗口的URL
-            new_window_url = driver.current_url
-            # 打印URL或进行其他操作
-            print(f"URL of the new window: {new_window_url}")
-            if attempts >= 1 or email_account.login_num > 0:
-                print("多次登录")
-                driver.implicitly_wait(10)
-                driver.find_element(
-                    By.XPATH, '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]/div').click()
-                time.sleep(10)
-                driver.switch_to.window(tik_tok)
-                new_current_url = driver.execute_script("return window.location.href;")
-                print(f"Current URL: {new_current_url}")
-                if old_current_url != new_current_url:
-                    print("登录成功")
+            try:
+                driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]').click()
 
-                    act.move_to_element(driver.find_element(
-                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[1]')).click().perform()
-                    time.sleep(1)
-                    months = driver.find_elements(
-                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[1]/div[2]/div')
-                    act.move_to_element(random.choice(months)).click().perform()
+                google_auth_login = driver.window_handles[1]
+                driver.switch_to.window(google_auth_login)
 
-                    act.move_to_element(driver.find_element(
-                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[2]')).click().perform()
-                    time.sleep(1)
-                    days = driver.find_elements(
-                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[2]/div[2]/div')
-                    act.move_to_element(random.choice(days)).click().perform()
-
-                    act.move_to_element(driver.find_element(
-                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]')).click().perform()
-                    time.sleep(1)
-                    years = driver.find_elements(
-                        By.XPATH, '//*[@id="loginContainer"]/div/div/div[2]/div[3]/div[2]/div')
-                    legit_years = years[20:38]
-                    act.move_to_element(random.choice(legit_years)).click().perform()
-
-
-
-                    driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/div/button').click()
-
-                else:
-                    print("登录失败")
-                    break
-            elif  attempts == 0 or email_account.login_num == 0:
-                print("首次登录")
-                driver.implicitly_wait(10)
-                driver.find_element(By.ID, 'identifierId'). send_keys(email_account.username)
-                print("填写邮箱成功")
-                driver.find_element(By.ID, 'identifierNext').click()
-                print("点击下一步")
                 driver.implicitly_wait(3)
-                driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input').send_keys(email_account.password)
-                print("填写密码成功")
-                driver.find_element(By.ID, 'passwordNext').click()
-                print("填写成功")
-                email_account.login_num+=1
-
-
-            attempts += 1
-            print("attempts : "+attempts)
-
-
+                verication_elements = driver.find_elements(By.XPATH, '//*[@id="identifierId"]')
+                # 判断元素是否存在
+                if  verication_elements:
+                    self.TkLoginFristByGoogle(driver, email_account)
+                else:
+                    self.TkLoginNoFristByGoogle(driver,old_current_url)
+                print("attempts : " + attempts)
+            except (TimeoutException,WebDriverException,Exception) as e:
+                print(e)
+                attempts+=1
     def loginTiktokByGoogle(self, email_account, driver, enterAccount):
-        from selenium.common.exceptions import NoSuchElementException, WebDriverException
+        '''
+        //*[@id="confirm"]
+        '''
+        from selenium.common.exceptions import  WebDriverException
         try:
             print("进入了输入账户页面")
             driver.implicitly_wait(10)
             print("获取用户名密码成功 账号：{} 密码：{}".format(email_account.username, email_account.password))
-            username_element =driver.find_element(By.ID, 'identifierId')
+            username_element = driver.find_element(By.ID, 'identifierId')
             print("获取登录框元素")
             username_element.send_keys(email_account.usename)
             print("输入密码")
             driver.find_element(By.ID, 'identifierNext').click()
             print("点击下一步")
-            driver.implicitly_wait(3)
+            driver.implicitly_wait(5)
             password_element = driver.find_element(By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input')
             password_element.send_keys(email_account.password)
             driver.find_element(By.ID, 'passwordNext').click()
-
-
-
-        except WebDriverException as e :
-            print("输入账号失败"+e)
+        except WebDriverException as e:
+            print("输入账号失败" + e)
             pass
 
     def process_email_account(self, email_account):
@@ -230,30 +284,31 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             email_account = self.createBro(email_account)
             self.TikTokRegister(email_account)
         else:
-            print('wei创建浏览器')
+            print('创建浏览器')
             self.TikTokRegister(email_account)
 
     # 获取一个未分配的代理
     def get_unassigned_proxy(self):
         return DvadminSystemTiktokProxyConfig.objects.filter(account_isnull=0, is_active=1).first()
 
-    def deal_the_img(self, vericaiton_type):
+    def deal_the_img(self, vericaiton_type,driver):
         '''
-        :param vericaiton_type:  1 双环    2 图片拖动 3  图片 同样元素
+        :param vericaiton_type:  1 双环  2 图片拖动  3  图片 同样元素
         :return:
         '''
         from proxy_config.utils.common import common_download_image
         from proxy_config.utils.verication.powerddddocr import ddddOcr_tk
         from proxy_config.utils.verication.rotate_captcha import tk_circle_discern
         # img 外部容器
+        print('vericaiton_state22222222')
         img_outer_container = None
         this_xpath_pattern = None  # 图片 二维码 pattern
         if vericaiton_type == 1:  # 外环
             this_xpath_pattern = './/div[@class="sc-jTzLTM kuTGKN"]'
-            img_outer_container = self.browser.find_element(By.XPATH, this_xpath_pattern)
+            img_outer_container = driver.find_element(By.XPATH, this_xpath_pattern)
         elif vericaiton_type == 2:  # 图片
             this_xpath_pattern = './/div[contains(@class,"captcha_verify_img--wrapper")]'
-            img_outer_container = self.browser.find_element(By.XPATH, this_xpath_pattern)
+            img_outer_container = driver.find_element(By.XPATH, this_xpath_pattern)
         elif vericaiton_type == 3:
             this_xpath_pattern = './/img[@id="captcha-verify-image"]'
             input('please deal the problem by hand,input waiting...')
@@ -279,8 +334,50 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         this_track = [int(distance // 4), int(distance // 4), int(distance * 0.3), int(distance * 0.2) + 5,
                       -8]  # 模拟鼠标拖动的点移
         this_track.append(int(distance) - sum(this_track))
-        self.hold_on_slide(this_track)  # 拖动滑块 模拟移动
-        self.judge_the_img_src_change(this_xpath_pattern + '/img[2]/@src', inner_pic, vericaiton_type)
+        self.hold_on_slide(this_track,driver)  # 拖动滑块 模拟移动
+        self.judge_the_img_src_change(driver,this_xpath_pattern + '/img[2]/@src', inner_pic, vericaiton_type)
+    def hold_on_slide(self, tracks,driver):
+        from selenium import webdriver
+        import time, random
+        try:
+            slider = driver.find_element(By.XPATH, './/div[contains(@class,"secsdk-captcha-drag-icon")]')
+            # 鼠标点击并按住不松
+            webdriver.ActionChains(driver).click_and_hold(slider).perform()
+            # 让鼠标随机往下移动一段距离
+            webdriver.ActionChains(driver).move_by_offset(xoffset=0, yoffset=100).perform()
+            time.sleep(0.15)
+            for item in tracks:
+                webdriver.ActionChains(driver).move_by_offset(xoffset=item,
+                                                                    yoffset=random.randint(-1, 1)).perform()
+                time.sleep(random.uniform(0.02, 0.15))
+            # 稳定一秒再松开 //*[@id="loginContainer"]/div[1]/form/div[2]/div[1]/input
+            time.sleep(1)
+            webdriver.ActionChains(driver).release().perform()
+            time.sleep(1)
+        except Exception as e:
+            print(e)
+    def judge_the_img_src_change(self, driver,this_xpath_pattern, last_inner_img_url: str, circle):
+
+        this_xpath_pattern = this_xpath_pattern  # inner_img_url pattern
+        response = driver.page_source
+        html = etree.HTML(response)
+        verication = html.xpath('.//div[contains(@class,"captcha_verify_container")]')  # 验证码块
+        import time
+        if verication:
+            img_src = html.xpath(this_xpath_pattern)  # 验证码图片
+            if len(img_src) == 1 and img_src[0] != last_inner_img_url:  # 验证码已经改变
+                # self.browser.implicitly_wait(5)
+                print("img_src%s" % img_src)
+                time.sleep(5)  # 等待 5s
+                self.deal_the_img(circle,driver)
+            # 验证码没有改变 或者加载错误
+            else:
+                time.sleep(10)
+                self.judge_the_img_src_change(driver,this_xpath_pattern, last_inner_img_url, circle)
+        else:
+            print('Success to over the picture')
+            self.verication_success = True  # 成功
+            return True
     def createBro(self, email_account):
         import requests
         port = generate_port()
@@ -361,7 +458,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             record.save()
         return DetailResponse(msg="修改成功")
 
-    def process_email_account_wrapper(self,email_account,lock):
+    def process_email_account_wrapper(self, email_account, lock):
         # 在这里调用你的 process_email_account 函数
         # 确保这个函数是线程安全的
         # 例如，可以使用 Lock 来确保线程安全
@@ -386,15 +483,15 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 email_accounts = DvadminSystemUserEmail.objects.all().filter(is_active=1)
                 # 创建一个 Lock，用于确保线程安全
                 lock = threading.Lock()
+
                 # 设置线程数量为 email_accounts 的数量
-                num_threads = len(email_accounts)*4
+                num_threads = len(email_accounts)
                 # 使用 ThreadPoolExecutor 创建一个线程池
                 with ThreadPoolExecutor(max_workers=num_threads) as executor:
+
                     # 使用 submit 提交每个邮箱账户的处理任务
                     for email_account in email_accounts:
-                        print(email_account)
-                        executor.submit(self.process_email_account_wrapper, email_account, lock)
-
+                        executor.submit(self.process_email_account_wrapper, email_account,lock)
             except Exception as e:
                 # 处理异常并返回错误信息
                 error_message = f"An error occurred: {e}"

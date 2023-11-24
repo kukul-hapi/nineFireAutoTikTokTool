@@ -14,7 +14,7 @@ import cv2 as cv2
 import math
 import numpy as np
 
-from tiktok_config import Verication_Tk_Dir
+from proxy_config.tiktok_config import Verication_Tk_Dir
 
 
 def circle_point_px(img, accuracy_angle, r=None):

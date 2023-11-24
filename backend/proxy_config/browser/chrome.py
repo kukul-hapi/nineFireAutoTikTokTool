@@ -68,10 +68,11 @@ def chrome_setup(email_account):
     import undetected_chromedriver as uc
     from proxy_config.models import DvadminSystemTiktokProxyConfig
     import requests
-
     proxy_config = DvadminSystemTiktokProxyConfig.objects.get(id=email_account.proxy_id)
     local_port = proxy_config.local_port
     options = uc.ChromeOptions()
+    # options.add_experimental_option('excludeSwitches',
+    #                                 ['enable-automation'])
     options.add_argument(
         f"--remote-debugging-port-{str(local_port)}")
     options.add_argument("--no-sandbox")

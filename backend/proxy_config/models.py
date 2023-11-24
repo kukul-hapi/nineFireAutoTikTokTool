@@ -403,7 +403,7 @@ class DvadminSystemTiktokProxyConfig(CoreModel):
         (0, "禁用"),
         (1, "启用"),
     )
-    account_isnull = models.IntegerField(blank=True, null=True)
+    account_isnull = models.IntegerField(blank=True, null=True,default=0)
 
     is_active = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name="状态")
 

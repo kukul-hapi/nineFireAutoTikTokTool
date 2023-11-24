@@ -84,6 +84,7 @@ class TiktokProxyConfigModelViewSet(CustomModelViewSet):
                 port=item['port'],
                 password=item['password'],
                 is_active=item['is_active'],
+                account_isnull=item['account_isnull'],
             )
             result = {
                 "username": proxy_config.username,
@@ -92,6 +93,7 @@ class TiktokProxyConfigModelViewSet(CustomModelViewSet):
                 "port": proxy_config.port,
                 "password": proxy_config.password,
                 "is_active": proxy_config.is_active,
+                "account_isnull": proxy_config.account_isnull,
             }
             results.append(result)
         return DetailResponse(data=results, msg="添加成功")

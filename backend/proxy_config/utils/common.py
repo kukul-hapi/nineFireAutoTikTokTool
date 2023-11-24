@@ -52,16 +52,9 @@ def common_download_image(url, filename, Outdir=Verication_Tk_Dir):
         filename = "%s.png" % filename
     # 从 URL 中获取文件名
     filepath = os.path.join(Outdir, filename)
-    proxies = {
-        'http': f'socks5h://127.0.0.1:7890',
-        'https': f'socks5h://127.0.0.1:7890',
-    }
-    # 设置环境变量
-    os.environ['HTTP_PROXY'] = proxies['http']
-    os.environ['HTTPS_PROXY'] = proxies['https']
 
     # 使用 requests 库发送请求
-    response = requests.get(url, proxies=proxies)
+    response = requests.get(url)
     # 将图片保存到本地文件
     with open(filepath, 'wb') as f:
         f.write(response.content)

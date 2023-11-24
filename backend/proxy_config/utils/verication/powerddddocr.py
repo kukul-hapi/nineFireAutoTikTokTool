@@ -3,7 +3,7 @@ import ddddocr
 from PIL import Image
 import os
 
-from tiktok_config import Verication_Tk_Dir
+from proxy_config.tiktok_config import Verication_Tk_Dir
 
 
 def ddddOcr_tk(targe_png,background_png):
