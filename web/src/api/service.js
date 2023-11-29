@@ -186,7 +186,7 @@ function createRequestFunction (service) {
         Authorization: 'JWT ' + token,
         'Content-Type': get(config, 'headers.Content-Type', 'application/json')
       },
-      timeout: 60000,
+      timeout: 160000,
       baseURL: util.baseURL(),
       data: {},
       params: params,
