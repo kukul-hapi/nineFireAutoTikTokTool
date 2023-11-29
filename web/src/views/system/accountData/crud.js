@@ -261,8 +261,8 @@ export const crudOptions = (vm) => {
               sizeLimit: 500 * 1024 // 不能超过限制
             },
             span: 24
-          },
-          helper: '限制文件大小不能超过500k'
+          }
+
         }
       }
     ]
