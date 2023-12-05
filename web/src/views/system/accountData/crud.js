@@ -106,39 +106,41 @@ export const crudOptions = (vm) => {
       {
         title: '粉丝数量',
         key: 'fans_count',
-          sortable: true,
+        sortable: true,
         minWidth: 90,
         type: 'input',
-        disabled: false,
+        form: {
+          disabled: true,
+          show: false,
+        }
+
       },
       {
         title: '播放量',
         key: 'video_count',
         sortable: 'custom',
         minWidth: 90,
-
         search: {
-          show:false,
+          show: false,
           disabled: false
         },
         type: 'input',
         form: {
-          show:false,
-          disabled: false,
-
+          disabled: true,
+          show: false,
         }
       },
       {
         title: '代理地址',
         key: 'proxy_address',
         search: {
-          show:false,
+          show: false,
           disabled: false
         },
         minWidth: 140,
         type: 'text',
         form: {
-          show:false,
+          show: false,
           disabled: true
         },
         component: {
@@ -149,24 +151,36 @@ export const crudOptions = (vm) => {
       {
         title: '密码',
         key: 'password',
-        show:false,
+        show: false,
         disabled: false,
-
+        component: {
+          span: 12,
+          showPassword: true,
+          placeholder: '请输入密码'
+        },
+        form: {
+          rules: [ // 表单校验规则
+            {
+              required: true,
+              message: '密码必填项'
+            }
+          ],
+        },
         minWidth: 140,
-        type: 'text',
+        type: 'password',
       },
       {
         title: '素材目录',
         key: 'mari_dir',
         search: {
-          show:false,
+          show: false,
           disabled: true
         },
         minWidth: 110,
         type: 'input',
         form: {
           disabled: true,
-          show:false,
+          show: false,
         }
       }, {
         title: '更新时间',
@@ -175,18 +189,18 @@ export const crudOptions = (vm) => {
         addForm: {component: {show: false}},
         form: {
           disabled: true,
-          show:false,
+          show: false,
         }
       },
       {
         title: '个人简介',
         key: 'pri_desc',
-        type: 'radio',
+        type: 'text',
         width: 70,
 
         form: {
           disabled: true,
-          show:false,
+          show: false,
         },
         component: {props: {color: 'auto'}} // 自动染色
       },
@@ -196,7 +210,7 @@ export const crudOptions = (vm) => {
         type: 'select',//switch
         width: 80,
         search: {
-          show:false,
+          show: false,
           disabled: false,
         },
         dict: {
@@ -204,7 +218,7 @@ export const crudOptions = (vm) => {
         },
         addForm: {
           component: {
-            show:false,
+            show: false,
             disabled: false
           }
         }
@@ -221,7 +235,7 @@ export const crudOptions = (vm) => {
           data: vm.dictionary('email_account_state')
         },
         form: {
-          value: true,
+          value: 2,
           component: {
             span: 12
           }
@@ -236,7 +250,7 @@ export const crudOptions = (vm) => {
         width: 70,
         type: 'select',
         form: {
-          value: true,
+          value: 1,
           component: {
             span: 12
           }
@@ -262,7 +276,6 @@ export const crudOptions = (vm) => {
             },
             span: 24
           }
-
         }
       }
     ]

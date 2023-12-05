@@ -18,13 +18,29 @@ from proxy_config.utils.random_email_name.randoms import EmailNameGenerator
 
 
 class ExportAccountProfileSerializer(CustomModelSerializer):
-    last_login = serializers.DateTimeField(
+    update_datetime = serializers.DateTimeField(
         format="%Y-%m-%d %H:%M:%S", required=False, read_only=True
     )
-    is_active = serializers.SerializerMethodField(read_only=True)
+    create_datetime = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M:%S", required=False, read_only=True
+    )
+    username = serializers.CharField(read_only=True)
+    desc_name = serializers.CharField(read_only=True)
+    is_active = serializers.CharField(read_only=True)
+    fans_count = serializers.CharField(source="dvadmin_system_user_email", default="")
+    video_count = serializers.CharField(source="dept.name", default="")
+    proxy_address = serializers.CharField(source="dept.name", default="")
+    mari_dir = serializers.CharField(source="dept.name", default="")
+    account_type = serializers.CharField(source="dept.name", default="")
+    description = serializers.CharField(source="dept.name", default="")
+    pri_desc = serializers.CharField(source="dept.name", default="")
+    account_state = serializers.CharField(source="dept.name", default="")
+    bro_id = serializers.CharField(source="dept.name", default="")
     dept_name = serializers.CharField(source="dept.name", default="")
-    dept_owner = serializers.CharField(source="dept.owner", default="")
-    gender = serializers.CharField(source="get_gender_display", read_only=True)
+    proxy_id = serializers.CharField(source="dept.name", default="")
+    password = serializers.CharField(source="dept.owner", default="")
+    connect_email = serializers.CharField(source="dept.owner", default="")
+    login_num = serializers.CharField(source="", read_only=True)
 
 
 class TKUserEmailModelViewSet(CustomModelViewSet):
@@ -126,6 +142,7 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
 
     @action(methods=["POST"], detail=False)
     def selected_operation(self, request):
+        from django.shortcuts import render
         import threading
         from concurrent.futures import ThreadPoolExecutor
         # todo  在这里获取 从数据库中获取启动状态的用户
@@ -135,12 +152,15 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
             try:
                 lock = threading.Lock()
                 email_accounts = DvadminSystemUserEmail.objects.all().filter(is_active=1, account_state=1)
-                num_threads = len(email_accounts) *2
-                with ThreadPoolExecutor(max_workers=num_threads) as executor:
-                    [executor.submit(self.process_email_account_wrapper, email_account,lock) for email_account in
-                     email_accounts]
-                    time.sleep(1)
-                return DetailResponse(msg="修改成功")
+                if email_accounts.exists():
+                    num_threads = len(email_accounts) * 2
+                    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+                        [executor.submit(self.process_email_account_wrapper, email_account, lock) for email_account in
+                         email_accounts]
+                    return DetailResponse(msg="修改成功")
+                else:
+                    # 没有激活的账号，显示相应的信息
+                    return DetailResponse(msg="无账号激活")
             except Exception as e:
                 # 处理异常并返回错误信息
                 error_message = f"An error occurred: {e}"
@@ -219,15 +239,14 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         driver.find_element(
             By.XPATH,
             '//*[@id="view_container"]/div/div/div[2]/div/div[1]/div/form/span/section/div/div/div/div/ul/li[1]/div').click()
-        time.sleep(3)
+        time.sleep(2)
         tik_tok = driver.window_handles[0]
         driver.switch_to.window(tik_tok)
-
         vericaiton_state = self.deal_verication_pic(driver)  # 0 无验证  1  环形   2 图片拖动  3 图片相同元素验证
         if vericaiton_state != 0:
             print("登录成功")
             self.deal_the_img(vericaiton_state, driver)
-            time.sleep(3)
+            time.sleep(1)
             self.TkLoginByInfo(driver)
             generate_e = EmailNameGenerator()
             str_list = generate_e.__repr__()
@@ -236,7 +255,6 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                 username)
             time.sleep(1)
             driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/form/button').click()
-
             return False
         new_current_url = driver.execute_script("return window.location.href;")
         print("旧页面" + old_current_url)
@@ -307,21 +325,22 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
                     vericaiton_state = self.deal_verication_pic(driver)  # 0 无验证  1  环形   2 图片拖动  3 图片相同元素验证
                     if vericaiton_state != 0:
                         self.deal_the_img(vericaiton_state, driver)
-                        time.sleep(2)
-                        self.TkLoginByInfo(driver)
-                        generate_e = EmailNameGenerator()
-                        str_list = generate_e.__repr__()
-                        username = str_list[2]
-                        driver.find_element(By.XPATH,
-                                            '//*[@id="loginContainer"]/div[1]/form/div[2]/div[1]/input').send_keys(
-                            username)
-                        time.sleep(1)
-                        driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/form/button').click()
-                        email_account.account_type = 5
-                        email_account.save()
-                        break
+                    self.TkLoginByInfo(driver)
+                    generate_e = EmailNameGenerator()
+                    str_list = generate_e.__repr__()
+                    username = str_list[2]
+                    driver.find_element(By.XPATH,
+                                        '//*[@id="loginContainer"]/div[1]/form/div[2]/div[1]/input').send_keys(
+                        username)
+                    time.sleep(1)
+                    driver.find_element(By.XPATH, '//*[@id="loginContainer"]/div[1]/form/button').click()
+                    email_account.account_type = 5
+                    DvadminSystemUserEmail.objects.all().update()
+                    email_account.save()
+                    break
                 else:
                     if self.TkLoginNoFristByGoogle(driver, old_current_url) == False:
+                        print("登录成功")
                         email_account.account_type = 5
                         email_account.save()
                         break
@@ -462,64 +481,66 @@ class TKUserEmailModelViewSet(CustomModelViewSet):
         port = generate_port()
         # 筛选is_active字段为1的用户邮箱信息
         proxy = self.get_unassigned_proxy(email_account)
-        print(email_account.username+"获取代理成功")
-        print(proxy)
-        url = "http://local.adspower.net:50325/api/v1/user/create"
-        # 如果存在is_active字段为1的用户邮箱信息
-        if proxy:
-            # 创建并保存到dvadmin_system_tiktok_proxy_config表
-            # 构建用户代理配置
-            payload = {
-                "name": "test",
-                "group_id": "0",
-                "repeat_config": [
-                    "0"
-                ],
-                "fingerprint_config": {
-                    "flash": "block",
-                    "scan_port_type": "1",
-                    "screen_resolution": "1024_768",
-                    "fonts": [
-                        "all"
+        if not proxy:
+            return DetailResponse(msg="无代理激活")  # 如果代理为空，返回指定的字符串
+        else:
+            print(email_account.username+"获取代理成功")
+            print(proxy)
+            url = "http://local.adspower.net:50325/api/v1/user/create"
+            # 如果存在is_active字段为1的用户邮箱信息
+            if proxy:
+                # 创建并保存到dvadmin_system_tiktok_proxy_config表
+                # 构建用户代理配置
+                payload = {
+                    "name": "test",
+                    "group_id": "0",
+                    "repeat_config": [
+                        "0"
                     ],
-                    "longitude": "180",
-                    "latitude": "90",
-                    "webrtc": "proxy",
-                    "do_not_track": "true",
-                    "hardware_concurrency": "default",
-                    "device_memory": "default"
+                    "fingerprint_config": {
+                        "flash": "block",
+                        "scan_port_type": "1",
+                        "screen_resolution": "1024_768",
+                        "fonts": [
+                            "all"
+                        ],
+                        "longitude": "180",
+                        "latitude": "90",
+                        "webrtc": "proxy",
+                        "do_not_track": "true",
+                        "hardware_concurrency": "default",
+                        "device_memory": "default"
+                    }
+                    ,
+                    "user_proxy_config": {
+                        "proxy_soft": "other",
+                        "proxy_type": "socks5",
+                        "proxy_host": proxy.IP,
+                        "proxy_port": proxy.port,
+                        "proxy_user": proxy.username,
+                        "proxy_password": proxy.password,
+                    }
                 }
-                ,
-                "user_proxy_config": {
-                    "proxy_soft": "other",
-                    "proxy_type": "socks5",
-                    "proxy_host": proxy.IP,
-                    "proxy_port": proxy.port,
-                    "proxy_user": proxy.username,
-                    "proxy_password": proxy.password,
+                headers = {
+                    'Content-Type': 'application/json'
                 }
-            }
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            try:
-                print(proxy.username)
-                with lock:
-                    response = requests.request("POST", url, headers=headers, json=payload).json()
-                print(response)
-                text = response
-                print(email_account.username+"创建浏览器成功")
-                # 如果没有这个浏览器 则进行另外一个操作
-                new_browser_id = text['data']['id']
-                # 假设email_account是一个DvadminSystemUserEmail对象
-                email_account.bro_id = new_browser_id
-                email_account.proxy_id = proxy.id
-                proxy.browser_id = new_browser_id
-                proxy.local_port = port
-                proxy.account_isnull = 1
-                proxy.save()
-            except Exception as e:
-                print(f"请查看ads浏览器连接是否正常，请查看" + {e})
-                # 等待一段时间后进行重试
-                time.sleep(1)
-            return email_account
+                try:
+                    print(proxy.username)
+                    with lock:
+                        response = requests.request("POST", url, headers=headers, json=payload).json()
+                    text = response
+                    print(email_account.username+"创建浏览器成功")
+                    # 如果没有这个浏览器 则进行另外一个操作
+                    new_browser_id = text['data']['id']
+                    # 假设email_account是一个DvadminSystemUserEmail对象
+                    email_account.bro_id = new_browser_id
+                    email_account.proxy_id = proxy.id
+                    proxy.browser_id = new_browser_id
+                    proxy.local_port = port
+                    proxy.account_isnull = 1
+                    proxy.save()
+                except Exception as e:
+                    print(f"请查看ads浏览器连接是否正常，请查看" + {e})
+                    # 等待一段时间后进行重试
+                    time.sleep(1)
+                return email_account

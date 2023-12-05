@@ -124,7 +124,7 @@ export const crudOptions = (vm) => {
         minWidth: 110,
         type: 'input',
         addForm: {component: {show: false}},//这里放添加表单配置
-        editForm: {component: {disabled: false}},//这里放编辑表单配置
+        editForm: {component: {disabled: true}},//这里放编辑表单配置
       },
       {
         title: '状态',
