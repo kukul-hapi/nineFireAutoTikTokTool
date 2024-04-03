@@ -21,3 +21,29 @@ web 线上体验 。。。看后期实际发展
 
 同时如果你有相关的想法 也可以联系lijunchao245@gmail.com
 同时我也在找工作 也同样可以联系我
+
+-----------------------------------------
+
+"This project is an overseas operational TK project, similar to a TK matrix system. Its main functionalities include entering accounts, inputting IPs, and solving TK's sliding captcha using double rotation. Here, I leveraged some projects from other developers. The project itself is based on DVAdmin, but due to my limited abilities, the modifications are not very refined, but it's functional.
+
+The main technology used is Selenium for automated login and registration. It also supports logging in via Google and other methods. You will need to understand the code and make changes accordingly. Unfortunately, the database schema was lost, so you'll need to deduce it yourself from the models.
+
+For this project, you'll need:
+1. A reliable global VPN
+2. High-quality overseas IPs
+3. Knowledge of fingerprint browsers
+
+Both login and registration are multithreaded and locked. If you encounter any issues, feel free to contact me.
+
+If you prefer, you can also transform it into a desktop application. There should be many modules available for desktop transformation.
+
+It is divided into three modules:
+1. Account list (entry and operation)
+2. Fingerprint browser and system parameter settings
+3. Configuration list for dynamic IPs
+
+Many features are yet to be developed, and currently, only partial code has been completed. It's for learning purposes only.
+
+Current development direction:
+Web-based online experience... to be determined based on actual development in the future.
+Also, if you have any related ideas, you can contact me at lijunchao245@gmail.com. Additionally, I am currently looking for employment, so feel free to reach out to me for job opportunities."
