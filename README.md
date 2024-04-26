@@ -43,12 +43,14 @@ It is divided into three modules:
 3. Configuration list for dynamic IPs
 
 Many features are yet to be developed, and currently, only partial code has been completed. It's for learning purposes only.
+
+Current development direction:
+Web-based online experience... to be determined based on actual development in the future.
+Also, if you have any related ideas, you can contact me at lijunchao245@gmail.com. Additionally, I am currently looking for employment, so feel free to reach out to me for job opportunities."
+
+
 同时也可以通过扫描 添加我的联系方式 获得更多的支持
 
 
 ![0af241eff78ac6a39afe0ac99db4c619](https://github.com/kukul-hapi/nineFireAutoTikTokTool/assets/92004218/791aba65-6c33-41c7-9a75-64a225f4bd02)
 
-
-Current development direction:
-Web-based online experience... to be determined based on actual development in the future.
-Also, if you have any related ideas, you can contact me at lijunchao245@gmail.com. Additionally, I am currently looking for employment, so feel free to reach out to me for job opportunities."
